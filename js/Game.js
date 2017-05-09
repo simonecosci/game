@@ -5,7 +5,7 @@ var Config = {
         img: {
             stop: "imgs/dami.gif",
             walk: "imgs/dami.gif",
-            shot: "imgs/cocco.png"
+            shot: "imgs/speedy-bullet-th.png"
         },
         speed: 300,
         shotSpeed: 300,
@@ -174,9 +174,9 @@ var Game = function () {
         });
         mana.addClass("manabar");
 
-        var e = $("<div/>");
-        e.attr("id", o.id);
-        e.css({
+        var $e = $("<div/>");
+        $e.attr("id", o.id);
+        $e.css({
             width: self.options[type].itemWidth,
             height: self.options[type].itemHeight,
             position: "absolute",
@@ -185,23 +185,41 @@ var Game = function () {
             left: randomInt(0, $(window).height())
         });
 
-        e.append($i);
-        e.append(health);
-        e.append(mana);
-        stage.append(e);
+        var $t = $('<span/>');
 
-        return e;
+        $e.append($i);
+        $e.append($t);
+        $e.append(health);
+        $e.append(mana);
+        stage.append($e);
+
+        return $e;
+    };
+
+    var attachDespanw = function (obj, time) {
+        obj.attr('despawntime', time);
+        obj.despanw = setInterval(function () {
+            if (parseInt(obj.attr('despawntime')) < 1000) {
+                obj.remove();
+                delete objs[obj.id];
+                return;
+            }
+            obj.attr('despawntime', parseInt(obj.attr('despawntime')) - 1000);
+            obj.find('span').html(parseInt(parseInt(obj.attr('despawntime')) / 1000)).css('color', '#fff');
+        }, 1000);
     };
 
     var createMana = function (o) {
         var mana = createObject(o, "mana");
         mana.attr('val', 50).addClass('consumable');
+        attachDespanw(mana, 5000);
         return mana;
     };
     var createHealth = function (o) {
-        var mana = createObject(o, "health");
-        mana.attr('val', 50).addClass('consumable');
-        return mana;
+        var health = createObject(o, "health");
+        health.attr('val', 50).addClass('consumable');
+        attachDespanw(health, 5000);
+        return health;
     };
 
     var createPlayer = function (o) {
@@ -345,7 +363,6 @@ var Game = function () {
     var shot = $("#shot");
     shot.css({
         position: "absolute",
-        backgroundColor: "#ccc",
         width: 20,
         height: 20,
         display: "none"
@@ -535,8 +552,8 @@ var Game = function () {
         myShot.css(myPos);
         myShot.show();
         myShot.hits = function () {
-            if (myShot.target.dead)
-                return false;
+            /*if (myShot.target.dead)
+             return false;*/
             if (myShot.shooter === me) {
                 for (var mId in mobs) {
                     if (overlaps(myShot, mobs[mId])) {
@@ -635,6 +652,12 @@ var Game = function () {
             manaSpawn(self.options.mana);
         }, this.options.mana.respawn);
         manaSpawn(this.options.mana);
+
+        this.healthSpawn = healthSpawn;
+        setInterval(function () {
+            healthSpawn(self.options.health);
+        }, this.options.health.respawn);
+        healthSpawn(this.options.health);
 
 
     };

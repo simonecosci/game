@@ -19,6 +19,23 @@ body {
 .mana {
     background: navy;
 }
+@keyframes pulse {
+    0% {
+     transform: scale(1, 1);
+    }
+
+    50% {
+     transform: scale(1.1, 1.1);
+    }
+
+    100% {
+    transform: scale(1, 1);
+    }
+}
+
+.consumable {
+    animation: pulse 1s linear infinite;
+}
 .notification {
     background: rgba(0,0,0,.2);
     color: black;

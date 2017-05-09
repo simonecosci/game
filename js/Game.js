@@ -179,8 +179,12 @@ var Game = function () {
         var type = (o.id === "me") ? "me" : "mobs";
 
         var mana = createObject(o, type);
-        mana.attr('val', 50);
-        mana.find('img').css('width', '50px').css('height', '50px');
+        mana.attr('val', 50)
+                .css('width', '50px')
+                .css('height', '50px')
+                .addClass('consumable');
+        mana.find('img').css('width', '50px')
+                .css('height', '50px');
         return mana;
     };
 

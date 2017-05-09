@@ -1,6 +1,7 @@
 * {
     -webkit-touch-callout:none;
     -webkit-user-select:none;
+    -o-user-select: none;
     -moz-user-select:none;
     -ms-user-select:none;
     user-select:none;
@@ -51,6 +52,8 @@ body {
     margin:  50px auto;
     padding: 40px;
     border: 3px solid black;
+    border-radius: 50px;
+    cursor: pointer;
 }
 #score {
     position: absolute;

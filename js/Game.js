@@ -58,8 +58,8 @@ var Game = function () {
     var objs = {};
     var toasts = {};
     var KEYS = {
-        FIRE: 32,
-        HEAL: 90,
+        FIRE: 49,
+        HEAL: 50,
         TARGET: 9
     };
 
@@ -134,11 +134,14 @@ var Game = function () {
     };
 
     var createObject = function (o, type) {
-        var i = $("<img/>");
-        i.attr("src", o.img.stop);
-        i.css({
+        var $i = $("<img/>");
+        $i.attr("src", o.img.stop);
+        $i.css({
             width: self.options[type].itemWidth,
             height: self.options[type].itemHeight
+        });
+        $i.on('dragstart', function (event) {
+            event.preventDefault();
         });
 
         var health = $("<div/>");
@@ -164,7 +167,7 @@ var Game = function () {
             left: randomInt(0, $(window).height())
         });
 
-        e.append(i);
+        e.append($i);
         e.append(health);
         e.append(mana);
         stage.append(e);
@@ -175,7 +178,11 @@ var Game = function () {
     var createMana = function (o) {
         var type = (o.id === "me") ? "me" : "mobs";
 
-        return createObject(o, type);
+        var mana = createObject(o, type);
+        mana.attr('val', 50);
+        mana.css('width', '30px');
+        mana.css('height', '30px');
+        return mana;
     };
 
     var createPlayer = function (o) {
@@ -412,10 +419,12 @@ var Game = function () {
                 me.find("img").attr("src", self.options.me.img.stop);
             },
             step: function () {
-
                 for (var i in objs) {
                     if (overlaps(me, objs[i])) {
-
+                        console.log('mana', objs[i].attr('val'));
+                        me.setMana(objs[i].attr('val'));
+                        objs[i].remove();
+                        delete objs[i];
                     }
                 }
             }
@@ -445,6 +454,11 @@ var Game = function () {
     };
 
     var _shot = function (shooter, target) {
+        if (!target) {
+            notify("No one target");
+            return;
+        }
+
         var manaCost = shooter.shotManaCost;
         var minDamage = shooter.minDamage;
         var maxDamage = shooter.maxDamage;
@@ -586,13 +600,11 @@ var Game = function () {
         spawn(this.options.mobs).start();
 
         this.manaSpawn = manaSpawn;
-        /*setInterval(function () {
-         manaSpawn(self.options.mana);
-         }, this.options.mana.respawn);*/
+        setInterval(function () {
+            manaSpawn(self.options.mana);
+        }, this.options.mana.respawn);
         manaSpawn(this.options.mana);
 
 
     };
-
-
 };

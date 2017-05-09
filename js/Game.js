@@ -179,7 +179,6 @@ var Game = function () {
     var inRange = function (p1, p2, min, max) {
         var distance = getDistance(p1, p2);
         if (distance > max) {
-
             return false;
         }
         if (distance < min) {

@@ -55,6 +55,7 @@ var Game = function () {
     var self = this;
     var me = {};
     var mobs = {};
+    var objs = {};
     var toasts = {};
     var KEYS = {
         FIRE: 32,
@@ -171,15 +172,20 @@ var Game = function () {
         return e;
     };
 
+    var createMana = function (o) {
+        var type = (o.id === "me") ? "me" : "mobs";
+
+        return createObject(o, type);
+    };
+
     var createPlayer = function (o) {
         var type = (o.id === "me") ? "me" : "mobs";
-        
-        createObject(o, type);
+
+        var player = createObject(o, type);
 
         var h = self.options[type].health;
         var m = self.options[type].mana;
 
-        var player = $("#" + o.id);
         player.addClass("player");
         player.find(".healthbar").progressbar({
             max: h,
@@ -212,6 +218,22 @@ var Game = function () {
             e.stopPropagation();
             me.setTarget($(this));
         });
+        player.setMana = function (val) {
+            var mana = player.find(".manabar").progressbar("value");
+            mana += val;
+            if (mana > player.find(".manabar").progressbar("option", "max"))
+                mana = player.find(".manabar").progressbar("option", "max");
+
+            player.find(".manabar").progressbar("value", mana);
+        };
+        player.setHealth = function (val) {
+            var health = player.find(".healthbar").progressbar("value");
+            health += val;
+            if (health > player.find(".healthbar").progressbar("option", "max"))
+                health = player.find(".healthbar").progressbar("option", "max");
+
+            player.find(".manabar").progressbar("value", health);
+        };
         player.kill = function () {
             player.dead = true;
             clearInterval(player.regeneration);
@@ -320,17 +342,17 @@ var Game = function () {
         return mobs[id];
     };
 
-    var itemSpawn = function (options) {
-        if (Object.keys(mobs).length >= self.options.maxSpawn)
+    var manaSpawn = function (options) {
+        if (Object.keys(objs).length >= self.options.maxSpawn)
             return;
-        var id = "enemy_" + $.now();
-        mobs[id] = createPlayer({
+        var id = "mana_" + $.now();
+        objs[id] = createMana({
             id: id,
             img: options.img
         });
         if (options)
-            mobs[id] = $.extend(true, mobs[id], options);
-        return mobs[id];
+            objs[id] = $.extend(true, objs[id], options);
+        return objs[id];
     };
 
     var tabIndex = 0;
@@ -388,6 +410,14 @@ var Game = function () {
             },
             always: function () {
                 me.find("img").attr("src", self.options.me.img.stop);
+            },
+            step: function () {
+
+                for (var i in objs) {
+                    if (overlaps(me, objs[i])) {
+
+                    }
+                }
             }
         };
         me.animate({
@@ -554,6 +584,14 @@ var Game = function () {
             spawn(self.options.mobs).start();
         }, this.options.respawn);
         spawn(this.options.mobs).start();
+
+        this.manaSpawn = manaSpawn;
+        /*setInterval(function () {
+         manaSpawn(self.options.mana);
+         }, this.options.mana.respawn);*/
+        manaSpawn(this.options.mana);
+
+
     };
 
 

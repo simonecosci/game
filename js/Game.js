@@ -264,7 +264,7 @@ var Game = function () {
         var type;
         if (o.id === "me")
             type = "me";
-        if (o.id.indexOf("enemy") === 0)
+        if (o.id.indexOf("mobs") === 0)
             type = "mobs";
         if (o.id.indexOf("team") === 0)
             type = "team";
@@ -427,7 +427,7 @@ var Game = function () {
     stage.height($(window).height());
 
     var spawn = function (options) {
-        var id = "enemy_" + $.now();
+        var id = "mobs_" + $.now();
         mobs[id] = createPlayer({
             id: id,
             img: options.img

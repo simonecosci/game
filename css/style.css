@@ -1,0 +1,93 @@
+* {
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+}
+html,body {
+    overflow: hidden;
+}
+body {
+    font-family: Arial;
+    background: url(../imgs/bg.jpg);
+}
+.health {
+    background: red;
+}
+.mana {
+    background: navy;
+}
+.notification {
+    background: rgba(0,0,0,.2);
+    color: black;
+    display: none;
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    border: 1px solid black;
+    box-shadow: 3px 3px 3px #ccc;
+    z-index: 1000;
+    width: 200px;
+    height: 50px;
+    padding: 10px;
+}
+.selected {
+    border: 1px solid red;
+    box-sizing: border-box;
+}
+#stage {
+    cursor: crosshair;
+}
+.player {
+    cursor: pointer;
+}
+#start-button {
+    background: violet;
+    color: #fff;
+    font-size: 300%;
+    display: block;
+    margin:  50px auto;
+    padding: 40px;
+    border: 3px solid black;
+}
+#score {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    opacity: .7;
+    background: yellow;
+    border: 1px solid black;
+    padding: 10px;
+    width: 200px;
+    text-align: center;
+    font-size: 300%;
+    text-shadow: 3px 3px 3px #ccc;
+    display: none;
+}
+#toolbar {
+    position: fixed;
+    bottom: 0;
+    background: silver;
+    height: 50px;
+    border: 1px solid black;
+    padding: 3px;
+    width: 99%;
+    margin: 0 auto;
+}
+#toolbar button {
+    width: 120px;
+    height: 40px;
+    font-size: 130%;
+}
+.shot {
+    width: 100%;
+    height: auto;
+}
+.damage {
+    position: absolute;
+    color: orange;
+    font-weight: bold;
+    font-size: 250%;
+    text-shadow: 3px 3px 3px #000;
+}

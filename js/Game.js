@@ -42,6 +42,30 @@ var Config = {
         respawn: 20000,
         value: 50
     },
+    team: {
+        img: {
+            stop: "imgs/donkey-stop.png",
+            walk: "imgs/donkey.gif",
+            shot: "imgs/banana.png"
+        },
+        speed: 200,
+        shotSpeed: 200,
+        shotManaCost: 10,
+        minDamage: 20,
+        maxDamage: 120,
+        minRange: 0,
+        maxRange: 300,
+        healManaCost: 10,
+        minHeal: 30,
+        maxHeal: 80,
+        health: 1000,
+        mana: 100,
+        timeout: 1000,
+        healthRegen: 5,
+        manaRegen: 10,
+        itemWidth: 150,
+        itemHeight: 150
+    },
     mobs: {
         img: {
             stop: "imgs/boss1.gif",
@@ -73,6 +97,7 @@ var Game = function () {
     var self = this;
     var me = {};
     var mobs = {};
+    var team = {};
     var objs = {};
     var toasts = {};
     var KEYS = {
@@ -162,6 +187,7 @@ var Game = function () {
         }
         return true;
     };
+    
     var createObject = function (o, type) {
         var $i = $("<img/>");
         $i.attr("src", o.img.stop);
@@ -207,7 +233,7 @@ var Game = function () {
         return $e;
     };
 
-    var attachDespanw = function (obj, time) {
+    var attachDespawn = function (obj, time) {
         obj.attr('despawntime', time);
         obj.despanw = setInterval(function () {
             if (parseInt(obj.attr('despawntime')) < 1000) {
@@ -223,18 +249,24 @@ var Game = function () {
     var createMana = function (o) {
         var mana = createObject(o, "mana");
         mana.attr('val', 50).addClass('consumable');
-        attachDespanw(mana, 5000);
+        attachDespawn(mana, 5000);
         return mana;
     };
     var createHealth = function (o) {
         var health = createObject(o, "health");
         health.attr('val', 50).addClass('consumable');
-        attachDespanw(health, 5000);
+        attachDespawn(health, 5000);
         return health;
     };
 
     var createPlayer = function (o) {
-        var type = (o.id === "me") ? "me" : "mobs";
+        var type;
+        if (o.id === "me") 
+            type = "me";
+        if (o.id.indexOf("enemy") === 0) 
+            type = "mobs";
+        if (o.id.indexOf("team") === 0)
+            type = "team";
 
         var player = createObject(o, type);
 
@@ -259,8 +291,9 @@ var Game = function () {
 
         player.setTarget = function (target) {
             $(".player").removeClass("selected");
-            me.target = target;
-            target.addClass("selected");
+            player.target = target;
+            if (player === me)
+                target.addClass("selected");
         };
 
         player.shot = function (target) {
@@ -271,7 +304,7 @@ var Game = function () {
         };
         player.on("click", function (e) {
             e.stopPropagation();
-            me.setTarget($(this));
+            me.setTarget($(this).data("player"));
         });
         player.setMana = function (val) {
             var mana = player.find(".manabar").progressbar("value");
@@ -313,28 +346,39 @@ var Game = function () {
                 var mana = mBar.progressbar("value");
 
                 health += player.healthRegen;
-                if (health > hBar.progressbar("option", "max"))
-                    health = hBar.progressbar("option", "max");
-
                 mana += player.manaRegen;
-                if (mana > mBar.progressbar("option", "max"))
-                    mana = mBar.progressbar("option", "max");
-
-                hBar.progressbar("value", health);
-                mBar.progressbar("value", mana);
-
+                
+                player.setHealth(health);
+                player.setMana(mana);
 
             }, 2000);
             if (type !== "me") {
                 var mob = player;
                 mob.tick = setInterval(function () {
                     mob.stop();
-                    var myPos = me.position();
+                    if (!mob.target) {
+                        if (type === "mobs") {
+                            if (randomInt(0, 1) === 0 && Object.keys(team).length > 0) {
+                                for (var t in team) {
+                                    mob.setTarget(team[t]);
+                                }
+                            } else
+                                mob.setTarget(me);
+                        }
+                        if (type === "team") {
+                            if (Object.keys(mobs).length > 0) {
+                                for (var m in mobs) {
+                                    mob.setTarget(mobs[m]);
+                                }
+                            }
+                        }
+                    }
+                    var myPos = mob.target.position();
                     var playerPos = mob.position();
                     var distance = getDistance(playerPos, myPos);
                     var dest = myPos;
                     if (distance >= mob.minRange && distance <= mob.maxRange) {
-                        mob.shot(me);
+                        mob.shot(mob.target);
                         return;
                     }
                     if (distance <= mob.minRange) {
@@ -357,17 +401,18 @@ var Game = function () {
                         queue: false,
                         easing: "linear",
                         start: function () {
-                            mob.find("img").attr("src", self.options.mobs.img.walk);
+                            mob.find("img").attr("src", self.options[type].img.walk);
                         },
                         always: function () {
-                            mob.find("img").attr("src", self.options.mobs.img.stop);
+                            mob.find("img").attr("src", self.options[type].img.stop);
                         }
                     });
-                    mob.shot(me);
+                    mob.shot(mob.target);
                 }, mob.timeout);
             }
             return player;
         };
+        player.data("player", player);
         return player;
     };
 
@@ -394,6 +439,17 @@ var Game = function () {
         return mobs[id];
     };
 
+    var spawnTeam = function (options) {
+        var id = "team_" + $.now();
+        team[id] = createPlayer({
+            id: id,
+            img: options.img
+        });
+        if (options)
+            team[id] = $.extend(true, team[id], options);
+        return team[id];
+    };
+    
     var manaSpawn = function (options) {
         if (Object.keys(objs).length >= self.options.mana.maxSpawn)
             return;
@@ -502,19 +558,19 @@ var Game = function () {
     });
 
     var _heal = function (healer, target) {
+        if (!target)
+            target = healer;
+        if (healer.attr("id") === "me" && target.attr("id").indexOf("enemy") === 0)
+            return;
+        if (healer.attr("id").indexOf("enemy") === 0 && target.attr("id").indexOf("enemy") !== 0)
+            return;
         var health = target.find(".healthbar").progressbar("value");
         var mana = healer.find(".manabar").progressbar("value");
         var heal = calculateHeal(healer);
         health += heal;
-        if (health > target.find(".healthbar").progressbar("option", "max"))
-            health = target.find(".healthbar").progressbar("option", "max");
-
+        target.setHealth(health);
         mana -= healer.healManaCost;
-        if (mana > healer.find(".manabar").progressbar("option", "max"))
-            mana = healer.find(".manabar").progressbar("option", "max");
-
-        target.find(".healthbar").progressbar("value", health);
-        healer.find(".manabar").progressbar("value", mana);
+        healer.setMana(mana);
 
     };
 
@@ -559,7 +615,13 @@ var Game = function () {
 
         var img = $("<img/>");
         img.addClass("shot");
-        img.attr("src", shooter.attr("id") === "me" ? self.options.me.img.shot : self.options.mobs.img.shot);
+        if (shooter.attr("id") === "me")
+            img.attr("src", self.options.me.img.shot);
+        if (shooter.attr("id").indexOf("enemy") === 0)
+            img.attr("src", self.options.mobs.img.shot);
+        if (shooter.attr("id").indexOf("team") === 0)
+            img.attr("src", self.options.team.img.shot);
+        
         myShot.append(img);
 
         myShot.min = minDamage;
@@ -571,9 +633,7 @@ var Game = function () {
         myShot.css(myPos);
         myShot.show();
         myShot.hits = function () {
-            /*if (myShot.target.dead)
-             return false;*/
-            if (myShot.shooter === me) {
+            if (myShot.shooter === me || myShot.shooter.attr("id").indexOf("team") === 0) {
                 for (var mId in mobs) {
                     if (overlaps(myShot, mobs[mId])) {
                         return mobs[mId];
@@ -606,7 +666,7 @@ var Game = function () {
                         damages.addClass("damage");
                         damages.css({
                             left: target.position().left,
-                            top: target.position().top,
+                            top: target.position().top
                         });
                         stage.append(damages);
                         damages.animate({
@@ -678,6 +738,7 @@ var Game = function () {
         }, this.options.health.respawn);
         healthSpawn(this.options.health);
 
-
+        spawnTeam(this.options.team);
+        
     };
 };

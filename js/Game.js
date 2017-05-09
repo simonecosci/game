@@ -14,13 +14,13 @@ var Config = {
         maxDamage: 200,
         minRange: 0,
         maxRange: 600,
-        healManaCost: 100,
+        healManaCost: 20,
         minHeal: 30,
         maxHeal: 800,
         health: 1000,
         mana: 100,
         healthRegen: 50,
-        manaRegen: 10,
+        manaRegen: 5,
         itemWidth: 100,
         itemHeight: 100
     },
@@ -235,8 +235,9 @@ var Game = function () {
 
     var attachDespawn = function (obj, time) {
         obj.attr('despawntime', time);
-        obj.despanw = setInterval(function () {
+        obj.despanwn = setInterval(function () {
             if (parseInt(obj.attr('despawntime')) < 1000) {
+                clearInterval(obj.despanwn);
                 obj.remove();
                 delete objs[obj.id];
                 return;
@@ -269,6 +270,7 @@ var Game = function () {
             type = "team";
 
         var player = createObject(o, type);
+        if (player.attr(type, true));
 
         var h = self.options[type].health;
         var m = self.options[type].mana;
@@ -296,31 +298,31 @@ var Game = function () {
                 target.addClass("selected");
         };
 
-        player.shot = function (target) {
-            _shot(player, target);
+        player.shot = function () {
+            _shot(player);
         };
         player.heal = function () {
-            _heal(player, player.target);
+            _heal(player);
         };
         player.on("click", function (e) {
             e.stopPropagation();
             me.setTarget($(this).data("player"));
         });
-        player.setMana = function (val) {
-            var mana = player.find(".manabar").progressbar("value");
-            mana += val;
+        player.setMana = function (mana) {
             if (mana > player.find(".manabar").progressbar("option", "max"))
                 mana = player.find(".manabar").progressbar("option", "max");
-
             player.find(".manabar").progressbar("value", mana);
         };
-        player.setHealth = function (val) {
-            var health = player.find(".healthbar").progressbar("value");
-            health += val;
+        player.getMana = function () {
+            return player.find(".manabar").progressbar("value");
+        };
+        player.setHealth = function (health) {
             if (health > player.find(".healthbar").progressbar("option", "max"))
                 health = player.find(".healthbar").progressbar("option", "max");
-
             player.find(".manabar").progressbar("value", health);
+        };
+        player.getHealth = function () {
+            return player.find(".healthbar").progressbar("value");
         };
         player.kill = function () {
             player.dead = true;
@@ -340,24 +342,19 @@ var Game = function () {
                     player.regeneration = null;
                     return;
                 }
-                var hBar = player.find(".healthbar");
-                var mBar = player.find(".manabar");
-                var health = hBar.progressbar("value");
-                var mana = mBar.progressbar("value");
+                var health = player.getHealth() + player.healthRegen;
+                var mana = player.getMana() + player.manaRegen;
 
-                health += player.healthRegen;
-                mana += player.manaRegen;
-                
                 player.setHealth(health);
                 player.setMana(mana);
 
             }, 2000);
-            if (type !== "me") {
+            if (!player.is("[me]")) {
                 var mob = player;
                 mob.tick = setInterval(function () {
                     mob.stop();
                     if (!mob.target) {
-                        if (type === "mobs") {
+                        if (player.is("[mobs]")) {
                             if (randomInt(0, 1) === 0 && Object.keys(team).length > 0) {
                                 for (var t in team) {
                                     mob.setTarget(team[t]);
@@ -365,7 +362,7 @@ var Game = function () {
                             } else
                                 mob.setTarget(me);
                         }
-                        if (type === "team") {
+                        if (player.is("[team]")) {
                             if (Object.keys(mobs).length > 0) {
                                 for (var m in mobs) {
                                     mob.setTarget(mobs[m]);
@@ -378,7 +375,7 @@ var Game = function () {
                     var distance = getDistance(playerPos, myPos);
                     var dest = myPos;
                     if (distance >= mob.minRange && distance <= mob.maxRange) {
-                        mob.shot(mob.target);
+                        mob.shot();
                         return;
                     }
                     if (distance <= mob.minRange) {
@@ -407,7 +404,7 @@ var Game = function () {
                             mob.find("img").attr("src", self.options[type].img.stop);
                         }
                     });
-                    mob.shot(mob.target);
+                    mob.shot();
                 }, mob.timeout);
             }
             return player;
@@ -479,7 +476,6 @@ var Game = function () {
 
     $(document).on("keyup", function (e) {
         var k = parseInt(e.keyCode || e.which);
-        //switch (String.fromCharCode(k)) {
         switch (k) {
             case KEYS.TARGET:
                 var keys = Object.keys(mobs);
@@ -493,13 +489,10 @@ var Game = function () {
                 break;
 
             case KEYS.FIRE:
-                if (me.target && me.target.attr("id") === me.attr("id"))
-                    return;
-                me.shot(me.target);
+                me.shot();
                 break;
 
             case KEYS.HEAL:
-                //if (me.target && me.target.attr("id") !== me.attr("id")) return;
                 me.heal();
                 break;
 
@@ -542,8 +535,7 @@ var Game = function () {
 
                 for (var i in objs) {
                     if (overlaps(me, objs[i])) {
-                        console.log('mana', objs[i].attr('val'));
-                        me.setMana(objs[i].attr('val'));
+                        me.setMana(me.getMana() + objs[i].attr('val'));
                         objs[i].remove();
                         delete objs[i];
                     }
@@ -557,28 +549,31 @@ var Game = function () {
 
     });
 
-    var _heal = function (healer, target) {
-        if (!target)
-            target = healer;
-        if (healer.attr("id") === "me" && target.attr("id").indexOf("enemy") === 0)
+    var _heal = function (healer) {
+        if (!healer.target)
+            healer.target = healer;
+        if (healer.is("[me]") && healer.target.is("[enemy]"))
             return;
-        if (healer.attr("id").indexOf("enemy") === 0 && target.attr("id").indexOf("enemy") !== 0)
+        if (healer.is("[enemy]") && !healer.target.is("[enemy]"))
             return;
-        var health = target.find(".healthbar").progressbar("value");
-        var mana = healer.find(".manabar").progressbar("value");
+        var health = healer.target.getHealth();
+        var mana = healer.getMana();
         var heal = calculateHeal(healer);
         health += heal;
-        target.setHealth(health);
+        healer.target.setHealth(health);
         mana -= healer.healManaCost;
         healer.setMana(mana);
-
     };
 
-    var _shot = function (shooter, target) {
-        if (!target) {
+    var _shot = function (shooter) {
+        if (!shooter.target) {
             notify("No one target");
             return;
         }
+        if (shooter.is("[me]") && (shooter.target.is("[team]") || shooter.target.is("[me]")))
+            return;
+        if (shooter.is("[enemy]") && shooter.target.is("[enemy]"))
+            return;
 
         var manaCost = shooter.shotManaCost;
         var minDamage = shooter.minDamage;
@@ -588,9 +583,9 @@ var Game = function () {
         myPos.top += parseInt(shooter.height() / 2);
         myPos.left += parseInt(shooter.width() / 2);
 
-        var toPos = target.position();
-        toPos.top += parseInt(target.height() / 2);
-        toPos.left += parseInt(target.width() / 2);
+        var toPos = shooter.target.position();
+        toPos.top += parseInt(shooter.target.height() / 2);
+        toPos.left += parseInt(shooter.target.width() / 2);
 
         var distance = getDistance(myPos, toPos);
         if (distance > shooter.maxRange) {
@@ -615,11 +610,11 @@ var Game = function () {
 
         var img = $("<img/>");
         img.addClass("shot");
-        if (shooter.attr("id") === "me")
+        if (shooter.is("[me]"))
             img.attr("src", self.options.me.img.shot);
-        if (shooter.attr("id").indexOf("enemy") === 0)
+        if (shooter.is("[enemy]"))
             img.attr("src", self.options.mobs.img.shot);
-        if (shooter.attr("id").indexOf("team") === 0)
+        if (shooter.is("[team]"))
             img.attr("src", self.options.team.img.shot);
         
         myShot.append(img);
@@ -628,12 +623,12 @@ var Game = function () {
         myShot.max = maxDamage;
         myShot.cost = manaCost;
         myShot.shooter = shooter;
-        myShot.target = target;
+        myShot.target = shooter.target;
         stage.append(myShot);
         myShot.css(myPos);
         myShot.show();
         myShot.hits = function () {
-            if (myShot.shooter === me || myShot.shooter.attr("id").indexOf("team") === 0) {
+            if (myShot.shooter === me || myShot.shooter.is("[team]")) {
                 for (var mId in mobs) {
                     if (overlaps(myShot, mobs[mId])) {
                         return mobs[mId];
@@ -653,20 +648,20 @@ var Game = function () {
             step: function () {
                 var hitted = myShot.hits();
                 if (hitted && hitted !== true)
-                    target = hitted;
-                if (hitted && !target.dead) {
+                    myShot.target = hitted;
+                if (hitted && !myShot.target.dead) {
                     myShot.stop();
                     options.always();
                     try {
-                        var health = target.find(".healthbar").progressbar("value");
-                        var damage = calculateDamage(myShot, target);
+                        var health = myShot.target.find(".healthbar").progressbar("value");
+                        var damage = calculateDamage(myShot, myShot.target);
                         health -= damage;
-                        target.find(".healthbar").progressbar("value", health);
+                        myShot.target.find(".healthbar").progressbar("value", health);
                         var damages = $("<span>" + damage + "</span>");
                         damages.addClass("damage");
                         damages.css({
-                            left: target.position().left,
-                            top: target.position().top
+                            left: myShot.target.position().left,
+                            top: myShot.target.position().top
                         });
                         stage.append(damages);
                         damages.animate({
@@ -679,13 +674,13 @@ var Game = function () {
 
                         if (health <= 0) {
                             health = 0;
-                            var id = target.attr("id");
-                            target.fadeOut(function () {
+                            var id = myShot.target.attr("id");
+                            myShot.target.fadeOut(function () {
                                 if (id === "me") {
                                     alert("You loose");
                                     window.location.reload(-1);
                                 }
-                                target.remove();
+                                myShot.target.remove();
                                 delete mobs[id];
                             });
                             if (mobs[id] && !mobs[id].dead) {

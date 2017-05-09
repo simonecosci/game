@@ -187,7 +187,7 @@ var Game = function () {
         }
         return true;
     };
-    
+
     var createObject = function (o, type) {
         var $i = $("<img/>");
         $i.attr("src", o.img.stop);
@@ -262,15 +262,16 @@ var Game = function () {
 
     var createPlayer = function (o) {
         var type;
-        if (o.id === "me") 
+        if (o.id === "me")
             type = "me";
-        if (o.id.indexOf("enemy") === 0) 
+        if (o.id.indexOf("enemy") === 0)
             type = "mobs";
         if (o.id.indexOf("team") === 0)
             type = "team";
 
         var player = createObject(o, type);
-        if (player.attr(type, true));
+        if (player.attr(type, true))
+            ;
 
         var h = self.options[type].health;
         var m = self.options[type].mana;
@@ -446,7 +447,7 @@ var Game = function () {
             team[id] = $.extend(true, team[id], options);
         return team[id];
     };
-    
+
     var manaSpawn = function (options) {
         if (Object.keys(objs).length >= self.options.mana.maxSpawn)
             return;
@@ -535,7 +536,12 @@ var Game = function () {
 
                 for (var i in objs) {
                     if (overlaps(me, objs[i])) {
-                        me.setMana(me.getMana() + objs[i].attr('val'));
+                        if (objs[i].attr("id").indexOf("mana") === 0) {
+                            me.setMana(me.getMana() + objs[i].attr('val'));
+                        }
+                        if (objs[i].attr("id").indexOf("health") === 0) {
+                            me.setHealth(me.getHealth() + objs[i].attr('val'));
+                        }
                         objs[i].remove();
                         delete objs[i];
                     }
@@ -552,9 +558,9 @@ var Game = function () {
     var _heal = function (healer) {
         if (!healer.target)
             healer.target = healer;
-        if (healer.is("[me]") && healer.target.is("[enemy]"))
+        if (healer.is("[me]") && healer.target.is("[mobs]"))
             return;
-        if (healer.is("[enemy]") && !healer.target.is("[enemy]"))
+        if (healer.is("[mobs]") && !healer.target.is("[mobs]"))
             return;
         var health = healer.target.getHealth();
         var mana = healer.getMana();
@@ -572,7 +578,7 @@ var Game = function () {
         }
         if (shooter.is("[me]") && (shooter.target.is("[team]") || shooter.target.is("[me]")))
             return;
-        if (shooter.is("[enemy]") && shooter.target.is("[enemy]"))
+        if (shooter.is("[mobs]") && shooter.target.is("[mobs]"))
             return;
 
         var manaCost = shooter.shotManaCost;
@@ -599,24 +605,24 @@ var Game = function () {
             return;
         }
         var tn = getTimeNeeded(myPos, toPos, {speed: shooter.shotSpeed});
-        var mana = shooter.find(".manabar").progressbar("value");
+        var mana = shooter.getMana();
         mana -= manaCost;
         if (mana < 0) {
             notify("not enough mana");
             return;
         }
-        shooter.find(".manabar").progressbar("value", mana);
+        shooter.setMana(mana);
         var myShot = shot.clone();
 
         var img = $("<img/>");
         img.addClass("shot");
         if (shooter.is("[me]"))
             img.attr("src", self.options.me.img.shot);
-        if (shooter.is("[enemy]"))
+        if (shooter.is("[mobs]"))
             img.attr("src", self.options.mobs.img.shot);
         if (shooter.is("[team]"))
             img.attr("src", self.options.team.img.shot);
-        
+
         myShot.append(img);
 
         myShot.min = minDamage;
@@ -629,13 +635,24 @@ var Game = function () {
         myShot.show();
         myShot.hits = function () {
             if (myShot.shooter === me || myShot.shooter.is("[team]")) {
-                for (var mId in mobs) {
-                    if (overlaps(myShot, mobs[mId])) {
-                        return mobs[mId];
+                for (var i in mobs) {
+                    if (overlaps(myShot, mobs[i])) {
+                        return mobs[i];
                     }
                 }
             }
-            return overlaps(myShot, myShot.target);
+            if (myShot.shooter.is("[mobs]")) {
+                for (var i in team) {
+                    if (overlaps(myShot, team[i])) {
+                        return team[i];
+                    }
+                }
+                if (overlaps(myShot, me))
+                    return me;
+            }
+            var o = overlaps(myShot, myShot.target);
+            if (o)
+                return myShot.target;
         };
         var options = {
             duration: tn,
@@ -647,31 +664,35 @@ var Game = function () {
             },
             step: function () {
                 var hitted = myShot.hits();
-                if (hitted && hitted !== true)
-                    myShot.target = hitted;
-                if (hitted && !myShot.target.dead) {
+                if (!hitted)
+                    return;
+                myShot.target = hitted;
+                if (!myShot.target.dead) {
                     myShot.stop();
                     options.always();
                     try {
-                        var health = myShot.target.find(".healthbar").progressbar("value");
+                        var health = myShot.target.getHealth();
                         var damage = calculateDamage(myShot, myShot.target);
                         health -= damage;
-                        myShot.target.find(".healthbar").progressbar("value", health);
-                        var damages = $("<span>" + damage + "</span>");
+                        myShot.target.setHealth(health);
+                        var dId = "dmg_" + $.now() + "_from_" + myShot.shooter.attr("id") + "_to_" + myShot.target.attr("id");
+                        var damages = $("<span id='" + dId + "'>" + damage + "</span>");
                         damages.addClass("damage");
                         damages.css({
                             left: myShot.target.position().left,
                             top: myShot.target.position().top
                         });
                         stage.append(damages);
-                        damages.animate({
-                            opacity: 0,
-                            fontSize: "500%",
+                        var d = damages.animate({
+                            opacity: 0.1,
+                            fontSize: "500%"
+                        }, {
+                            duration: 1500,
                             done: function () {
-                                damages.remove();
+                                $("#" + dId).remove();
                             }
-                        }, {duration: 1500});
-
+                        });
+                        
                         if (health <= 0) {
                             health = 0;
                             var id = myShot.target.attr("id");
@@ -681,12 +702,35 @@ var Game = function () {
                                     window.location.reload(-1);
                                 }
                                 myShot.target.remove();
-                                delete mobs[id];
+                                myShot.shooter.stop();
+                                if (myShot.target.is("[mobs]")) {
+                                    delete mobs[id];
+                                    if (myShot.shooter.is("[team]")) {
+                                        for (var i in mobs) {
+                                            myShot.shooter.setTarget(mobs[i]);
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (myShot.target.is("[team]")) {
+                                    delete team[id];
+                                    for (var i in team) {
+                                        myShot.shooter.setTarget(team[i]);
+                                        break;
+                                    }
+                                }
                             });
-                            if (mobs[id] && !mobs[id].dead) {
-                                mobs[id].kill();
-                                me.score += 1;
-                                $("#score").text(me.score);
+                            if (myShot.target.is("[mobs]")) {
+                                if (mobs[id] && !mobs[id].dead) {
+                                    mobs[id].kill();
+                                    me.score += 1;
+                                    $("#score").text(me.score);
+                                }
+                            }
+                            if (myShot.target.is("[team]")) {
+                                if (team[id] && !team[id].dead) {
+                                    team[id].kill();
+                                }
                             }
                         }
                     } catch (e) {
@@ -717,7 +761,7 @@ var Game = function () {
         setInterval(function () {
             if (Object.keys(mobs).length >= self.options.maxSpawn)
                 return;
-            spawn(self.options.mobs).start();
+            //spawn(self.options.mobs).start();
         }, this.options.respawn);
         spawn(this.options.mobs).start();
 
@@ -734,6 +778,6 @@ var Game = function () {
         healthSpawn(this.options.health);
 
         spawnTeam(this.options.team);
-        
+
     };
 };

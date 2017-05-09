@@ -151,6 +151,17 @@ var Game = function () {
         return Math.floor(Math.random() * (max - min + 1) + min);
     };
 
+    var inRange = function (p1, p2, min, max) {
+        var distance = getDistance(p1, p2);
+        if (distance > max) {
+
+            return false;
+        }
+        if (distance < min) {
+            return false;
+        }
+        return true;
+    };
     var createObject = function (o, type) {
         var $i = $("<img/>");
         $i.attr("src", o.img.stop);
@@ -465,6 +476,14 @@ var Game = function () {
                 me.find("img").attr("src", self.options.me.img.stop);
             },
             step: function () {
+                //dodo: dove trovo le armi?
+                /*if (inRange(me, me.target, 0, 600)) {
+                 console.log('in range');
+                 //CAMBIARE COLORE AL BOTTONE
+                 } else {
+                 console.log('not in range');
+                 }*/
+
                 for (var i in objs) {
                     if (overlaps(me, objs[i])) {
                         console.log('mana', objs[i].attr('val'));

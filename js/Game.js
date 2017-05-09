@@ -1,71 +1,71 @@
 var Config = {
-	maxSpawn: 3,
-	respawn: 5000,
-	me: {
-		img: {
-			stop: "imgs/dami.gif",
-			walk: "imgs/dami.gif",
-			shot: "imgs/cocco.png"
-		},
-		speed: 300,
-		shotSpeed: 300,
-		shotManaCost: 3,
-		minDamage: 10,
-		maxDamage: 200,
-		minRange: 0,
-		maxRange: 600,
-		healManaCost: 100,
-		minHeal: 30,
-		maxHeal: 800,
-		health: 1000,
-		mana: 100,
-		healthRegen: 50,
-		manaRegen: 10,
-		itemWidth: 100,
-		itemHeight: 100
-	},
-	mana:{
-		itemWith: 50,
-		itemHeight: 50,
-		img: {
-			stop: "imgs/magic_triangle_flask-256.png"
-		},
-		respawn: 20000,
-		value: 50
-	},
-	health:{
-		itemWith: 50,
-		itemHeight: 50,
-		img: {
-			stop: "imgs/magic_square_flask-256.png"
-		},
-		respawn: 20000,
-		value: 50
-	},
-	mobs: {
-		img: {
-			stop: "imgs/boss1.gif",
-			walk: "imgs/boss1.gif",
-			shot: "imgs/banana.png"
-		},
-		speed: 200,
-		shotSpeed: 200,
-		shotManaCost: 10,
-		minDamage: 20,
-		maxDamage: 120,
-		minRange: 0,
-		maxRange: 300,
-		healManaCost: 10,
-		minHeal: 30,
-		maxHeal: 80,
-		health: 1000,
-		mana: 100,
-		timeout: 1000,
-		healthRegen: 5,
-		manaRegen: 10,
-		itemWidth: 150,
-		itemHeight: 150
-	}
+    maxSpawn: 3,
+    respawn: 5000,
+    me: {
+        img: {
+            stop: "imgs/dami.gif",
+            walk: "imgs/dami.gif",
+            shot: "imgs/cocco.png"
+        },
+        speed: 300,
+        shotSpeed: 300,
+        shotManaCost: 3,
+        minDamage: 10,
+        maxDamage: 200,
+        minRange: 0,
+        maxRange: 600,
+        healManaCost: 100,
+        minHeal: 30,
+        maxHeal: 800,
+        health: 1000,
+        mana: 100,
+        healthRegen: 50,
+        manaRegen: 10,
+        itemWidth: 100,
+        itemHeight: 100
+    },
+    mana: {
+        itemWidth: 50,
+        itemHeight: 50,
+        img: {
+            stop: "imgs/magic_triangle_flask-256.png"
+        },
+        respawn: 20000,
+        value: 50
+    },
+    health: {
+        itemWidth: 50,
+        itemHeight: 50,
+        img: {
+            stop: "imgs/magic_square_flask-256.png"
+        },
+        respawn: 20000,
+        value: 50
+    },
+    mobs: {
+        img: {
+            stop: "imgs/boss1.gif",
+            walk: "imgs/boss1.gif",
+            shot: "imgs/banana.png"
+        },
+        speed: 200,
+        shotSpeed: 200,
+        shotManaCost: 10,
+        minDamage: 20,
+        maxDamage: 120,
+        minRange: 0,
+        maxRange: 300,
+        healManaCost: 10,
+        minHeal: 30,
+        maxHeal: 80,
+        health: 1000,
+        mana: 100,
+        timeout: 1000,
+        healthRegen: 5,
+        manaRegen: 10,
+        itemWidth: 150,
+        itemHeight: 150
+    }
 };
 
 var Game = function () {
@@ -194,12 +194,12 @@ var Game = function () {
     };
 
     var createMana = function (o) {
-        var mana = createObject(o, "object");
+        var mana = createObject(o, "mana");
         mana.attr('val', 50).addClass('consumable');
         return mana;
     };
     var createHealth = function (o) {
-        var mana = createObject(o, "object");
+        var mana = createObject(o, "health");
         mana.attr('val', 50).addClass('consumable');
         return mana;
     };
@@ -356,8 +356,6 @@ var Game = function () {
     stage.height($(window).height());
 
     var spawn = function (options) {
-        if (Object.keys(mobs).length >= self.options.maxSpawn)
-            return;
         var id = "enemy_" + $.now();
         mobs[id] = createPlayer({
             id: id,
@@ -626,6 +624,8 @@ var Game = function () {
         this.spawn = spawn;
         var self = this;
         setInterval(function () {
+            if (Object.keys(mobs).length >= self.options.maxSpawn)
+                return;
             spawn(self.options.mobs).start();
         }, this.options.respawn);
         spawn(this.options.mobs).start();

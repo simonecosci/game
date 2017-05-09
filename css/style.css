@@ -90,16 +90,18 @@ body {
     position: fixed;
     bottom: 0;
     background: silver;
-    height: 50px;
+    overflow: hidden;
     border: 1px solid black;
     padding: 3px;
-    width: 99%;
     margin: 0 auto;
 }
 #toolbar button {
-    width: 120px;
-    height: 40px;
     font-size: 130%;
+}
+@media only screen and (min-width: 768px) {
+    #toolbar button {
+        font-size: 300%;
+    }    
 }
 .shot {
     width: 100%;

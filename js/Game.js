@@ -180,8 +180,7 @@ var Game = function () {
 
         var mana = createObject(o, type);
         mana.attr('val', 50);
-        mana.css('width', '30px');
-        mana.css('height', '30px');
+        mana.find('img').css('width', '50px').css('height', '50px');
         return mana;
     };
 

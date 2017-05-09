@@ -1,53 +1,71 @@
 var Config = {
-    maxSpawn: 10,
-    respawn: 60000,
-    me: {
-        img: {
-            stop: "imgs/stop.jpg",
-            walk: "imgs/run.gif",
-            shot: "imgs/cocco.png"
-        },
-        speed: 300,
-        shotSpeed: 300,
-        shotManaCost: 3,
-        minDamage: 20,
-        maxDamage: 100,
-        minRange: 0,
-        maxRange: 600,
-        healManaCost: 10,
-        minHeal: 30,
-        maxHeal: 80,
-        health: 100,
-        mana: 100,
-        healthRegen: 5,
-        manaRegen: 10,
-        itemWidth: 100,
-        itemHeight: 100
-    },
-    mobs: {
-        img: {
-            stop: "imgs/donkey-stop.png",
-            walk: "imgs/donkey.gif",
-            shot: "imgs/banana.png"
-        },
-        speed: 100,
-        shotSpeed: 300,
-        shotManaCost: 3,
-        minDamage: 2,
-        maxDamage: 10,
-        minRange: 0,
-        maxRange: 600,
-        healManaCost: 10,
-        minHeal: 30,
-        maxHeal: 80,
-        health: 100,
-        mana: 100,
-        healthRegen: 5,
-        manaRegen: 10,
-        timeout: 3000,
-        itemWidth: 100,
-        itemHeight: 100
-    }
+	maxSpawn: 3,
+	respawn: 5000,
+	me: {
+		img: {
+			stop: "imgs/dami.gif",
+			walk: "imgs/dami.gif",
+			shot: "imgs/cocco.png"
+		},
+		speed: 300,
+		shotSpeed: 300,
+		shotManaCost: 3,
+		minDamage: 10,
+		maxDamage: 200,
+		minRange: 0,
+		maxRange: 600,
+		healManaCost: 100,
+		minHeal: 30,
+		maxHeal: 800,
+		health: 1000,
+		mana: 100,
+		healthRegen: 50,
+		manaRegen: 10,
+		itemWidth: 100,
+		itemHeight: 100
+	},
+	mana:{
+		itemWith: 50,
+		itemHeight: 50,
+		img: {
+			stop: "imgs/magic_triangle_flask-256.png"
+		},
+		respawn: 20000,
+		value: 50
+	},
+	health:{
+		itemWith: 50,
+		itemHeight: 50,
+		img: {
+			stop: "imgs/magic_square_flask-256.png"
+		},
+		respawn: 20000,
+		value: 50
+	},
+	mobs: {
+		img: {
+			stop: "imgs/boss1.gif",
+			walk: "imgs/boss1.gif",
+			shot: "imgs/banana.png"
+		},
+		speed: 200,
+		shotSpeed: 200,
+		shotManaCost: 10,
+		minDamage: 20,
+		maxDamage: 120,
+		minRange: 0,
+		maxRange: 300,
+		healManaCost: 10,
+		minHeal: 30,
+		maxHeal: 80,
+		health: 1000,
+		mana: 100,
+		timeout: 1000,
+		healthRegen: 5,
+		manaRegen: 10,
+		itemWidth: 150,
+		itemHeight: 150
+	}
 };
 
 var Game = function () {
@@ -176,15 +194,13 @@ var Game = function () {
     };
 
     var createMana = function (o) {
-        var type = (o.id === "me") ? "me" : "mobs";
-
-        var mana = createObject(o, type);
-        mana.attr('val', 50)
-                .css('width', '50px')
-                .css('height', '50px')
-                .addClass('consumable');
-        mana.find('img').css('width', '50px')
-                .css('height', '50px');
+        var mana = createObject(o, "object");
+        mana.attr('val', 50).addClass('consumable');
+        return mana;
+    };
+    var createHealth = function (o) {
+        var mana = createObject(o, "object");
+        mana.attr('val', 50).addClass('consumable');
         return mana;
     };
 
@@ -353,10 +369,22 @@ var Game = function () {
     };
 
     var manaSpawn = function (options) {
-        if (Object.keys(objs).length >= self.options.maxSpawn)
+        if (Object.keys(objs).length >= self.options.mana.maxSpawn)
             return;
         var id = "mana_" + $.now();
         objs[id] = createMana({
+            id: id,
+            img: options.img
+        });
+        if (options)
+            objs[id] = $.extend(true, objs[id], options);
+        return objs[id];
+    };
+    var healthSpawn = function (options) {
+        if (Object.keys(objs).length >= self.options.health.maxSpawn)
+            return;
+        var id = "health_" + $.now();
+        objs[id] = createHealth({
             id: id,
             img: options.img
         });

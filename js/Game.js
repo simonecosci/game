@@ -132,10 +132,7 @@ var Game = function () {
         return Math.floor(Math.random() * (max - min + 1) + min);
     };
 
-    var createPlayer = function (o) {
-
-        var type = (o.id === "me") ? "me" : "mobs";
-
+    var createObject = function (o, type) {
         var i = $("<img/>");
         i.attr("src", o.img.stop);
         i.css({
@@ -170,6 +167,14 @@ var Game = function () {
         e.append(health);
         e.append(mana);
         stage.append(e);
+
+        return e;
+    };
+
+    var createPlayer = function (o) {
+        var type = (o.id === "me") ? "me" : "mobs";
+        
+        createObject(o, type);
 
         var h = self.options[type].health;
         var m = self.options[type].mana;
@@ -303,6 +308,19 @@ var Game = function () {
     stage.height($(window).height());
 
     var spawn = function (options) {
+        if (Object.keys(mobs).length >= self.options.maxSpawn)
+            return;
+        var id = "enemy_" + $.now();
+        mobs[id] = createPlayer({
+            id: id,
+            img: options.img
+        });
+        if (options)
+            mobs[id] = $.extend(true, mobs[id], options);
+        return mobs[id];
+    };
+
+    var itemSpawn = function (options) {
         if (Object.keys(mobs).length >= self.options.maxSpawn)
             return;
         var id = "enemy_" + $.now();
@@ -525,7 +543,6 @@ var Game = function () {
         if (this.options && this.options.me) {
             me = $.extend(true, me, this.options.me);
         }
-        me.css("right", 0);
         me.score = 0;
         $("#score").text("0").css("display", "inline-block");
         me.start();

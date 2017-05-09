@@ -33,8 +33,9 @@ body {
     padding: 10px;
 }
 .selected {
-    border: 1px solid red;
+    border: 2px solid red;
     box-sizing: border-box;
+    border-radius: 40px;
 }
 #stage {
     cursor: crosshair;

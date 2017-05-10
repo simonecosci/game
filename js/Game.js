@@ -1,7 +1,7 @@
 var Config = {
     maxSpawn: 3,
     respawn: 5000,
-    godMode: true,
+    cheats: false,
     me: {
         img: {
             stop: "imgs/dami.gif",
@@ -69,7 +69,7 @@ var Config = {
         itemWidth: 150,
         itemHeight: 150,
         immortal: false,
-        endlessmana: true
+        endlessmana: false
     },
     mobs: {
         img: {
@@ -94,7 +94,7 @@ var Config = {
         manaRegen: 10,
         itemWidth: 150,
         itemHeight: 150,
-        immortal: true,
+        immortal: false,
         endlessmana: true
     }
 };
@@ -326,7 +326,9 @@ var Game = function () {
         player.setHealth = function (health) {
             if (health > player.find(".healthbar").progressbar("option", "max"))
                 health = player.find(".healthbar").progressbar("option", "max");
-            player.find(".manabar").progressbar("value", health);
+
+            player.find(".healthbar").progressbar("value", health);
+            console.log(health, player.getHealth());
         };
         player.getHealth = function () {
             return player.find(".healthbar").progressbar("value");
@@ -612,7 +614,7 @@ var Game = function () {
         }
         var tn = getTimeNeeded(myPos, toPos, {speed: shooter.shotSpeed});
 
-        if (!Config.godMode || (Config.godMode && !shooter.endlessmana)) {
+        if (!Config.cheats || (Config.cheats && !shooter.endlessmana)) {
             var mana = shooter.getMana();
             mana -= manaCost;
             if (mana < 0) {
@@ -677,81 +679,82 @@ var Game = function () {
                 if (!hitted)
                     return;
                 myShot.target = hitted;
-                if (!myShot.target.dead) {
-                    myShot.stop();
-                    options.always();
-                    try {
-                        var health = myShot.target.getHealth();
-                        var damage = calculateDamage(myShot, myShot.target);
-                        if (!Config.godMode || (Config.godMode && !myShot.target.immortal)) {
-                            health -= damage;
-                            myShot.target.setHealth(health);
-                        }
-                        var dId = "dmg_" + $.now() + "_from_" + myShot.shooter.attr("id") + "_to_" + myShot.target.attr("id");
-                        var damages = $("<span id='" + dId + "'>" + damage + "</span>");
-                        damages.addClass("damage");
-                        damages.css({
-                            left: myShot.target.position().left,
-                            top: myShot.target.position().top
-                        });
-                        stage.append(damages);
-                        var d = damages.animate({
-                            opacity: 0.1,
-                            fontSize: "500%"
-                        }, {
-                            duration: 1500,
-                            done: function () {
-                                $("#" + dId).remove();
-                            }
-                        });
+                if (myShot.target.dead) {
+                    return;
+                }
+                myShot.stop();
+                options.always();
+                try {
+                    var health = myShot.target.getHealth();
+                    var damage = calculateDamage(myShot, myShot.target);
+                    if (!Config.cheats || (Config.cheats && !myShot.target.immortal)) {
+                        health -= damage;
+                        myShot.target.setHealth(health);
+                    }
 
-                        if (health <= 0) {
-                            health = 0;
-                            var id = myShot.target.attr("id");
-                            myShot.target.fadeOut(function () {
-                                if (id === "me") {
-                                    alert("You loose");
-                                    window.location.reload(-1);
-                                }
-                                myShot.target.remove();
-                                myShot.shooter.stop();
-                                if (myShot.target.is("[mobs]")) {
-                                    delete mobs[id];
-                                    if (myShot.shooter.is("[team]")) {
-                                        for (var i in mobs) {
-                                            myShot.shooter.setTarget(mobs[i]);
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (myShot.target.is("[team]")) {
-                                    delete team[id];
-                                    for (var i in team) {
-                                        myShot.shooter.setTarget(team[i]);
+                    var dId = "dmg_" + $.now() + "_from_" + myShot.shooter.attr("id") + "_to_" + myShot.target.attr("id");
+                    var damages = $("<span id='" + dId + "'>" + damage + "</span>");
+                    damages.addClass("damage");
+                    damages.css({
+                        left: myShot.target.position().left,
+                        top: myShot.target.position().top
+                    });
+                    stage.append(damages);
+                    var d = damages.animate({
+                        opacity: 0.1,
+                        fontSize: "500%"
+                    }, {
+                        duration: 1500,
+                        done: function () {
+                            $("#" + dId).remove();
+                        }
+                    });
+
+                    if (health <= 0) {
+                        health = 0;
+                        var id = myShot.target.attr("id");
+                        myShot.target.fadeOut(function () {
+                            if (id === "me") {
+                                alert("You loose");
+                                window.location.reload(-1);
+                            }
+                            myShot.target.remove();
+                            myShot.shooter.stop();
+                            if (myShot.target.is("[mobs]")) {
+                                delete mobs[id];
+                                if (myShot.shooter.is("[team]")) {
+                                    for (var i in mobs) {
+                                        myShot.shooter.setTarget(mobs[i]);
                                         break;
                                     }
                                 }
-                            });
-                            if (myShot.target.is("[mobs]")) {
-                                if (mobs[id] && !mobs[id].dead) {
-                                    mobs[id].kill();
-                                    me.score += 1;
-                                    $("#score").text(me.score);
-                                }
                             }
                             if (myShot.target.is("[team]")) {
-                                if (team[id] && !team[id].dead) {
-                                    team[id].kill();
+                                delete team[id];
+                                for (var i in team) {
+                                    myShot.shooter.setTarget(team[i]);
+                                    break;
                                 }
                             }
+                        });
+                        if (myShot.target.is("[mobs]")) {
+                            if (mobs[id] && !mobs[id].dead) {
+                                mobs[id].kill();
+                                me.score += 1;
+                                $("#score").text(me.score);
+                            }
                         }
-                    } catch (e) {
+                        if (myShot.target.is("[team]")) {
+                            if (team[id] && !team[id].dead) {
+                                team[id].kill();
+                            }
+                        }
                     }
+                } catch (e) {
                 }
             }
         };
         myShot.animate(toPos, options);
-
     };
 
     this.start = function (options) {
@@ -773,7 +776,7 @@ var Game = function () {
         setInterval(function () {
             if (Object.keys(mobs).length >= self.options.maxSpawn)
                 return;
-            //spawn(self.options.mobs).start();
+            spawn(self.options.mobs).start();
         }, this.options.respawn);
         spawn(this.options.mobs).start();
 
@@ -789,7 +792,7 @@ var Game = function () {
         }, this.options.health.respawn);
         healthSpawn(this.options.health);
 
-        spawnTeam(this.options.team);
+        //spawnTeam(this.options.team);
 
     };
 };

@@ -689,6 +689,9 @@ var Game = function () {
                     return;
                 myShot.target = hitted;
                 if (myShot.target.dead || !myShot.valid) {
+                    if (myShot.target.dead) {
+                        myShot.shooter.target = null;
+                    }
                     return;
                 }
                 myShot.stop();

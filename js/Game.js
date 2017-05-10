@@ -113,15 +113,22 @@ var Game = function () {
         TARGET: 9
     };
 
-    var notify = function (message) {
+    var notify = function (obj, message) {
         var id = "toast_" + $.now();
         if (toasts[id])
             return;
         var toast = $("<div/>");
         toast.html(message);
-        toast.addClass("notification");
+
+        if (obj !== null) {
+            toast.addClass("notificationInside");
+            toast.prependTo(obj);
+        } else {
+            toast.addClass("notificationBottom");
+            toast.prependTo("body");
+        }
         toast.attr("id", id);
-        toast.prependTo("body");
+
         toasts[id] = toast;
         toast.fadeIn("fast", function () {
             setTimeout(function () {
@@ -582,7 +589,7 @@ var Game = function () {
 
     var _shot = function (shooter) {
         if (!shooter.target) {
-            notify("No one target");
+            notify(shooter, "No one target");
             return;
         }
         if (shooter.is("[me]") && (shooter.target.is("[team]") || shooter.target.is("[me]")))
@@ -605,12 +612,12 @@ var Game = function () {
         var distance = getDistance(myPos, toPos);
         if (distance > shooter.maxRange) {
             if (shooter === me)
-                notify("Too far away");
+                notify(shooter, "Too far away");
             return;
         }
         if (distance < shooter.mimRange) {
             if (shooter === me)
-                notify("Too close");
+                notify(shooter, "Too close");
             return;
         }
         var tn = getTimeNeeded(myPos, toPos, {speed: shooter.shotSpeed});
@@ -619,7 +626,7 @@ var Game = function () {
             var mana = shooter.getMana();
             mana -= manaCost;
             if (mana < 0) {
-                notify("not enough mana");
+                notify(shooter, "not enough mana");
                 return;
             }
             shooter.setMana(mana);
@@ -643,6 +650,7 @@ var Game = function () {
         myShot.cost = manaCost;
         myShot.shooter = shooter;
         myShot.target = shooter.target;
+        myShot.valid = true;
         stage.append(myShot);
         myShot.css(myPos);
         myShot.show();
@@ -680,10 +688,11 @@ var Game = function () {
                 if (!hitted)
                     return;
                 myShot.target = hitted;
-                if (myShot.target.dead) {
+                if (myShot.target.dead || !myShot.valid) {
                     return;
                 }
                 myShot.stop();
+                myShot.valid = false;
                 options.always();
                 try {
                     var health = myShot.target.getHealth();

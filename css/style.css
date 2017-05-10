@@ -33,6 +33,16 @@ body {
     }
 }
 
+.cdtext {
+    display: block;
+    width: 30px;
+    font-size: 2em;
+    text-align: center;
+    vertical-align: middle;
+    margin: 0 auto;
+    position: relative;
+    top: -100%;
+}
 .consumable {
     animation: pulse 1s linear infinite;
 }

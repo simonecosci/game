@@ -1,7 +1,7 @@
 var Config = {
     maxSpawn: 3,
     respawn: 5000,
-    cheats: false,
+    cheats: true,
     me: {
         img: {
             stop: "imgs/dami.gif",
@@ -229,6 +229,7 @@ var Game = function () {
         });
 
         var $t = $('<span/>');
+        $t.addClass('cdtext');
 
         $e.append($i);
         $e.append($t);

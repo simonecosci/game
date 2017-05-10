@@ -2,6 +2,8 @@ var Config = {
     maxSpawn: 3,
     respawn: 5000,
     cheats: true,
+    shotCD: 200,
+    healCD: 200,
     me: {
         img: {
             stop: "imgs/dami.gif",
@@ -102,6 +104,8 @@ var Config = {
 var Game = function () {
 
     var self = this;
+    var lastShottingTime = new Date().getTime();
+    var lastHealingTime = new Date().getTime();
     var me = {};
     var mobs = {};
     var team = {};
@@ -314,6 +318,12 @@ var Game = function () {
         };
 
         player.shot = function () {
+            //todo: shot multipler
+            /*for (var i = 0; i < 3; i++) {
+             setTimeout(function () {
+             _shot(player);
+             }, i * 200);
+             }*/
             _shot(player);
         };
         player.heal = function () {
@@ -336,7 +346,6 @@ var Game = function () {
                 health = player.find(".healthbar").progressbar("option", "max");
 
             player.find(".healthbar").progressbar("value", health);
-            console.log(health, player.getHealth());
         };
         player.getHealth = function () {
             return player.find(".healthbar").progressbar("value");
@@ -376,8 +385,10 @@ var Game = function () {
                                 for (var t in team) {
                                     mob.setTarget(team[t]);
                                 }
-                            } else
+                            } else {
+                                //todo: rimuove il target da se stesso ogni volta che spawna un mob
                                 mob.setTarget(me);
+                            }
                         }
                         if (player.is("[team]")) {
                             if (Object.keys(mobs).length > 0) {
@@ -491,26 +502,33 @@ var Game = function () {
 
     var tabIndex = 0;
 
-    $(document).on("keyup", function (e) {
+    $(document).on("keydown", function (e) {
         var k = parseInt(e.keyCode || e.which);
+        var t = new Date().getTime();
+
         switch (k) {
             case KEYS.TARGET:
+                e.preventDefault();
                 var keys = Object.keys(mobs);
                 if (keys.length === 0)
                     return;
-                if (tabIndex >= keys.length)
-                    tabIndex = 0;
-                var mob = keys[tabIndex];
-                me.setTarget(mobs[mob]);
+
+                me.setTarget(nearestMob(me));
                 tabIndex++;
                 break;
 
             case KEYS.FIRE:
-                me.shot();
+                if (lastShottingTime + Config.shotCD < t) {
+                    me.shot();
+                    lastShottingTime = t;
+                }
                 break;
 
             case KEYS.HEAL:
-                me.heal();
+                if (lastHealingTime + Config.healCD < t) {
+                    me.heal();
+                    lastHealingTime = t;
+                }
                 break;
 
             default:
@@ -570,6 +588,24 @@ var Game = function () {
         }, options);
 
     });
+
+    var mobsDistance = function (from) {
+        for (var i in mobs) {
+            mobs[i].distanceFrom = getDistance(from.position(), mobs[i].position());
+        }
+    };
+
+    var nearestMob = function (from) {
+        //mobsDistance(from);
+        var d = null;
+        for (var i in mobs) {
+            mobs[i].distanceFrom = getDistance(from.position(), mobs[i].position());
+            if (d === null || d.distanceFrom > mobs[i].distanceFrom) {
+                d = mobs[i];
+            }
+        }
+        return d;
+    }
 
     var _heal = function (healer) {
         if (!healer.target)

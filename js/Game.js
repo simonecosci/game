@@ -324,10 +324,19 @@ var Game = function () {
              _shot(player);
              }, i * 200);
              }*/
-            _shot(player);
+            var t = new Date().getTime();
+            if (lastShottingTime + Config.shotCD < t) {
+                _shot(player);
+                lastShottingTime = t;
+            }
+
         };
         player.heal = function () {
-            _heal(player);
+            var t = new Date().getTime();
+            if (lastHealingTime + Config.healCD < t) {
+                _heal(player);
+                lastHealingTime = t;
+            }
         };
         player.on("click", function (e) {
             e.stopPropagation();
@@ -504,8 +513,6 @@ var Game = function () {
 
     $(document).on("keydown", function (e) {
         var k = parseInt(e.keyCode || e.which);
-        var t = new Date().getTime();
-
         switch (k) {
             case KEYS.TARGET:
                 e.preventDefault();
@@ -519,18 +526,12 @@ var Game = function () {
 
             case KEYS.FIRE:
                 e.preventDefault();
-                if (lastShottingTime + Config.shotCD < t) {
-                    me.shot();
-                    lastShottingTime = t;
-                }
+                me.shot();
                 break;
 
             case KEYS.HEAL:
                 e.preventDefault();
-                if (lastHealingTime + Config.healCD < t) {
-                    me.heal();
-                    lastHealingTime = t;
-                }
+                me.heal();
                 break;
 
             default:

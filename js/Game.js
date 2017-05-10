@@ -1,6 +1,7 @@
 var Config = {
     maxSpawn: 3,
     respawn: 5000,
+    godMode: true,
     me: {
         img: {
             stop: "imgs/dami.gif",
@@ -22,7 +23,9 @@ var Config = {
         healthRegen: 50,
         manaRegen: 5,
         itemWidth: 100,
-        itemHeight: 100
+        itemHeight: 100,
+        immortal: true,
+        endlessmana: true
     },
     mana: {
         itemWidth: 50,
@@ -64,7 +67,9 @@ var Config = {
         healthRegen: 5,
         manaRegen: 10,
         itemWidth: 150,
-        itemHeight: 150
+        itemHeight: 150,
+        immortal: false,
+        endlessmana: true
     },
     mobs: {
         img: {
@@ -88,7 +93,9 @@ var Config = {
         healthRegen: 5,
         manaRegen: 10,
         itemWidth: 150,
-        itemHeight: 150
+        itemHeight: 150,
+        immortal: true,
+        endlessmana: true
     }
 };
 
@@ -604,13 +611,17 @@ var Game = function () {
             return;
         }
         var tn = getTimeNeeded(myPos, toPos, {speed: shooter.shotSpeed});
-        var mana = shooter.getMana();
-        mana -= manaCost;
-        if (mana < 0) {
-            notify("not enough mana");
-            return;
+
+        if (!Config.godMode || (Config.godMode && !shooter.endlessmana)) {
+            var mana = shooter.getMana();
+            mana -= manaCost;
+            if (mana < 0) {
+                notify("not enough mana");
+                return;
+            }
+            shooter.setMana(mana);
         }
-        shooter.setMana(mana);
+
         var myShot = shot.clone();
 
         var img = $("<img/>");
@@ -672,8 +683,10 @@ var Game = function () {
                     try {
                         var health = myShot.target.getHealth();
                         var damage = calculateDamage(myShot, myShot.target);
-                        health -= damage;
-                        myShot.target.setHealth(health);
+                        if (!Config.godMode || (Config.godMode && !myShot.target.immortal)) {
+                            health -= damage;
+                            myShot.target.setHealth(health);
+                        }
                         var dId = "dmg_" + $.now() + "_from_" + myShot.shooter.attr("id") + "_to_" + myShot.target.attr("id");
                         var damages = $("<span id='" + dId + "'>" + damage + "</span>");
                         damages.addClass("damage");
@@ -691,7 +704,7 @@ var Game = function () {
                                 $("#" + dId).remove();
                             }
                         });
-                        
+
                         if (health <= 0) {
                             health = 0;
                             var id = myShot.target.attr("id");

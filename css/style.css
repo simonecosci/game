@@ -107,6 +107,7 @@ body {
 #toolbar {
     position: fixed;
     bottom: 0;
+    right: 0;
     background: silver;
     overflow: hidden;
     border: 1px solid black;
@@ -115,6 +116,13 @@ body {
 }
 #toolbar button {
     font-size: 130%;
+}
+
+#button-shot {
+}
+#button-heal {
+}
+#button-pause {
 }
 @media only screen and (min-width: 768px) {
     #toolbar button {

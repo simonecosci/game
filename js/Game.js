@@ -11,7 +11,7 @@ var Config = {
             shot: "imgs/speedy-bullet-th.png"
         },
         speed: 300,
-        shotSpeed: 300,
+        shotSpeed: 400,
         shotManaCost: 3,
         minDamage: 10,
         maxDamage: 200,
@@ -54,7 +54,7 @@ var Config = {
             shot: "imgs/banana.png"
         },
         speed: 200,
-        shotSpeed: 200,
+        shotSpeed: 400,
         shotManaCost: 10,
         minDamage: 20,
         maxDamage: 120,
@@ -85,7 +85,7 @@ var Config = {
         minDamage: 20,
         maxDamage: 120,
         minRange: 0,
-        maxRange: 300,
+        maxRange: 600,
         healManaCost: 10,
         minHeal: 30,
         maxHeal: 80,
@@ -518,6 +518,7 @@ var Game = function () {
                 break;
 
             case KEYS.FIRE:
+                e.preventDefault();
                 if (lastShottingTime + Config.shotCD < t) {
                     me.shot();
                     lastShottingTime = t;
@@ -525,6 +526,7 @@ var Game = function () {
                 break;
 
             case KEYS.HEAL:
+                e.preventDefault();
                 if (lastHealingTime + Config.healCD < t) {
                     me.heal();
                     lastHealingTime = t;

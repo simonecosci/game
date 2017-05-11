@@ -49,9 +49,9 @@ var Config = {
     },
     team: {
         img: {
-            stop: "imgs/donkey-stop.png",
-            walk: "imgs/donkey.gif",
-            shot: "imgs/banana.png"
+            stop: "imgs/dami.gif",
+            walk: "imgs/dami.gif",
+            shot: "imgs/speedy-bullet-th.png"
         },
         speed: 200,
         shotSpeed: 400,
@@ -68,8 +68,8 @@ var Config = {
         timeout: 1000,
         healthRegen: 5,
         manaRegen: 10,
-        itemWidth: 150,
-        itemHeight: 150,
+        itemWidth: 100,
+        itemHeight: 100,
         immortal: false,
         endlessmana: false
     },
@@ -97,15 +97,13 @@ var Config = {
         itemWidth: 150,
         itemHeight: 150,
         immortal: false,
-        endlessmana: true
+        endlessmana: false
     }
 };
 
 var Game = function () {
 
     var self = this;
-    var lastShottingTime = new Date().getTime();
-    var lastHealingTime = new Date().getTime();
     var me = {};
     var mobs = {};
     var team = {};
@@ -316,26 +314,22 @@ var Game = function () {
             if (player === me)
                 target.addClass("selected");
         };
-
+        player.cooldowns = {
+            shot: new Date().getTime(),
+            heal: new Date().getTime()
+        };
         player.shot = function () {
-            //todo: shot multipler
-            /*for (var i = 0; i < 3; i++) {
-             setTimeout(function () {
-             _shot(player);
-             }, i * 200);
-             }*/
             var t = new Date().getTime();
-            if (lastShottingTime + Config.shotCD < t) {
+            if (player.cooldowns.shot + self.options.shotCD < t) {
                 _shot(player);
-                lastShottingTime = t;
+                player.cooldowns.shot = t;
             }
-
         };
         player.heal = function () {
             var t = new Date().getTime();
-            if (lastHealingTime + Config.healCD < t) {
+            if (player.cooldowns.heal + self.options.healCD < t) {
                 _heal(player);
-                lastHealingTime = t;
+                player.cooldowns.heal = t;
             }
         };
         player.on("click", function (e) {
@@ -608,7 +602,7 @@ var Game = function () {
             }
         }
         return d;
-    }
+    };
 
     var _heal = function (healer) {
         if (!healer.target)
@@ -628,7 +622,7 @@ var Game = function () {
 
     var _shot = function (shooter) {
         if (!shooter.target) {
-            notify(shooter, "No one target");
+            notify(shooter, "Missing target");
             return;
         }
         if (shooter.is("[me]") && (shooter.target.is("[team]") || shooter.target.is("[me]")))
@@ -661,11 +655,11 @@ var Game = function () {
         }
         var tn = getTimeNeeded(myPos, toPos, {speed: shooter.shotSpeed});
 
-        if (!Config.cheats || (Config.cheats && !shooter.endlessmana)) {
+        if (!self.options.cheats || (self.options.cheats && !shooter.endlessmana)) {
             var mana = shooter.getMana();
             mana -= manaCost;
             if (mana < 0) {
-                notify(shooter, "not enough mana");
+                notify(shooter, "Not enough mana");
                 return;
             }
             shooter.setMana(mana);
@@ -726,7 +720,12 @@ var Game = function () {
                 var hitted = myShot.hits();
                 if (!hitted)
                     return;
+                
                 myShot.target = hitted;
+                
+                if (!myShot.target.is("[me]"))
+                    hitted.setTarget(myShot.shooter);
+                
                 if (myShot.target.dead || !myShot.valid) {
                     if (myShot.target.dead) {
                         myShot.shooter.target = null;
@@ -739,7 +738,7 @@ var Game = function () {
                 try {
                     var health = myShot.target.getHealth();
                     var damage = calculateDamage(myShot, myShot.target);
-                    if (!Config.cheats || (Config.cheats && !myShot.target.immortal)) {
+                    if (!self.options.cheats || (self.options.cheats && !myShot.target.immortal)) {
                         health -= damage;
                         myShot.target.setHealth(health);
                     }
@@ -844,7 +843,8 @@ var Game = function () {
         }, this.options.health.respawn);
         healthSpawn(this.options.health);
 
-        //spawnTeam(this.options.team);
+        spawnTeam(this.options.team).start();
+        spawnTeam(this.options.team).start();
 
     };
 };

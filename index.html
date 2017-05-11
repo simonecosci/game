@@ -24,7 +24,7 @@
                     $("#button-shot").on("click", function () {
                         var target = game.player.target;
                         if (!target) {
-                            game.notify("select a target");
+                            game.notify(game.player, "select a target");
                             return;
                         }
                         if (target.attr("id") === "me")
@@ -32,9 +32,9 @@
                         game.player.shot(target);
                     });
                     $("#button-heal").on("click", function () {
-                        var target = game.player;
+                        var target = game.player.target;
                         if (!target) {
-                            game.notify("select a target");
+                            game.notify(game.player, "select a target");
                             return;
                         }
                         game.player.heal(target);

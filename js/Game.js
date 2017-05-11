@@ -320,7 +320,7 @@ var Game = function () {
         };
         player.setTarget = function (target) {
             player.target = target;
-            if (player === me) {
+            if (player.is("[me]")) {
                 $(".player").removeClass("selected");
                 target.addClass("selected");
             }
@@ -390,6 +390,7 @@ var Game = function () {
                 player.setMana(mana);
 
             }, 2000);
+            
             if (!player.is("[me]")) {
                 var mob = player;
                 mob.tick = setInterval(function () {
@@ -397,12 +398,6 @@ var Game = function () {
                     try {
 
                         mob.stop();
-
-                        if (mob.dead) {
-                            clearInterval(mob.tick);
-                            mob.tick = null;
-                            return;
-                        }
                         
                         // divide mana and health
                         // mobs and team can use it
@@ -486,7 +481,7 @@ var Game = function () {
                         
                         // se non ha target prova a cercare il piu' vicino
                         if (!mob.target) {
-                            if (player.is("[mobs]")) {
+                            if (mob.is("[mobs]")) {
                                 if (randomInt(0, 1) === 0 && Object.keys(team).length > 0) {
                                     var closest = mob.getClosest(team);
                                     mob.setTarget(closest);
@@ -495,7 +490,7 @@ var Game = function () {
                                     mob.setTarget(me);
                                 }
                             }
-                            if (player.is("[team]")) {
+                            if (mob.is("[team]")) {
                                 if (Object.keys(mobs).length > 0) {
                                     var closest = mob.getClosest(mobs);
                                     mob.setTarget(closest);
@@ -857,22 +852,6 @@ var Game = function () {
                                 window.location.reload(-1);
                             }
                             myShot.shooter.stop();
-
-                            //remove the same target from other teammates
-                            if (myShot.target.is("[team]")) {
-                                for (var i in mobs) {
-                                    if (mobs[i].target === myShot.target) {
-                                        mobs[i].setTarget(null);
-                                    }
-                                }
-                            }
-                            if (myShot.target.is("[mobs]")) {
-                                for (var i in team) {
-                                    if (team[i].target === myShot.target) {
-                                        team[i].setTarget(null);
-                                    }
-                                }
-                            }
                             myShot.target.remove();
 
                         });

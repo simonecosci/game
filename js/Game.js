@@ -1,5 +1,4 @@
 var Config = {
-    maxSpawn: 3,
     respawn: 5000,
     cheats: true,
     shotCD: 200,
@@ -48,6 +47,7 @@ var Config = {
         value: 50
     },
     team: {
+        maxSpawn: 1,
         img: {
             stop: "imgs/dami.gif",
             walk: "imgs/dami.gif",
@@ -74,6 +74,7 @@ var Config = {
         endlessmana: false
     },
     mobs: {
+        maxSpawn: 2,
         img: {
             stop: "imgs/boss1.gif",
             walk: "imgs/boss1.gif",
@@ -307,26 +308,36 @@ var Game = function () {
                 "ui-progressbar": "mana"
             }
         });
-
+        player.getClosest = function (what) {
+            var closest = null;
+            for (var i in what) {
+                what[i].distanceFrom = getDistance(player.position(), what[i].position());
+                if (closest === null || closest.distanceFrom > what[i].distanceFrom) {
+                    closest = what[i];
+                }
+            }
+            return closest;
+        };
         player.setTarget = function (target) {
-            $(".player").removeClass("selected");
             player.target = target;
-            if (player === me)
+            if (player === me) {
+                $(".player").removeClass("selected");
                 target.addClass("selected");
+            }
         };
         player.cooldowns = {
-            shot: new Date().getTime(),
-            heal: new Date().getTime()
+            shot: $.now(),
+            heal: $.now()
         };
         player.shot = function () {
-            var t = new Date().getTime();
+            var t = $.now();
             if (player.cooldowns.shot + self.options.shotCD < t) {
                 _shot(player);
                 player.cooldowns.shot = t;
             }
         };
         player.heal = function () {
-            var t = new Date().getTime();
+            var t = $.now();
             if (player.cooldowns.heal + self.options.healCD < t) {
                 _heal(player);
                 player.cooldowns.heal = t;
@@ -362,6 +373,7 @@ var Game = function () {
                 player.tick = null;
             }
         };
+
         player.regeneration = null;
         player.start = function () {
             player.regeneration = setInterval(function () {
@@ -381,61 +393,155 @@ var Game = function () {
             if (!player.is("[me]")) {
                 var mob = player;
                 mob.tick = setInterval(function () {
-                    mob.stop();
-                    if (!mob.target) {
-                        if (player.is("[mobs]")) {
-                            if (randomInt(0, 1) === 0 && Object.keys(team).length > 0) {
-                                for (var t in team) {
-                                    mob.setTarget(team[t]);
+
+                    try {
+
+                        mob.stop();
+
+                        if (mob.dead) {
+                            clearInterval(mob.tick);
+                            mob.tick = null;
+                            return;
+                        }
+                        
+                        // divide mana and health
+                        // mobs and team can use it
+                        var items = {
+                            mana: {},
+                            health: {}
+                        };
+
+                        var playerPos = mob.position();
+
+                        for (var i in objs) {
+                            var objId = objs[i].attr("id");
+                            if (objId.indexOf("mana") === 0) {
+                                items.mana[objId] = objs[i];
+                            }
+                            if (objId.indexOf("health") === 0) {
+                                items.health[objId] = objs[i];
+                            }
+                            if (overlaps(mob, objs[i])) {
+                                if (objId.indexOf("mana") === 0) {
+                                    mob.setMana(mob.getMana() + objs[i].attr('val'));
                                 }
-                            } else {
-                                //todo: rimuove il target da se stesso ogni volta che spawna un mob
-                                mob.setTarget(me);
+                                if (objId.indexOf("health") === 0) {
+                                    mob.setHealth(mob.getHealth() + objs[i].attr('val'));
+                                }
+                                objs[i].remove();
+                                delete objs[i];
                             }
                         }
-                        if (player.is("[team]")) {
-                            if (Object.keys(mobs).length > 0) {
-                                for (var m in mobs) {
-                                    mob.setTarget(mobs[m]);
+                        
+                        // se la salute va sotto il 30% prova a curarsi
+                        // ma se la mana non basta cerca la piu vicina pozza di salute
+                        // e se nemmeno questa c'e' prova a cercarne una di mana se questa e' sotto il 30%
+                        if (mob.getHealth() < self.options[type].health / 3) {
+
+                            if (mob.getMana() >= self.options[type].healManaCost) {
+                                var currentTarget = mob.target;
+                                mob.setTarget(mob);
+                                mob.heal();
+                                mob.setTarget(currentTarget);
+                                return;
+                            }
+
+                            var dest = mob.getClosest(items.health);
+                            if (dest) {
+                                var duration = getTimeNeeded(playerPos, dest, mob);
+                                mob.animate(dest, {
+                                    duration: duration,
+                                    queue: false,
+                                    easing: "linear",
+                                    start: function () {
+                                        mob.find("img").attr("src", self.options[type].img.walk);
+                                    },
+                                    always: function () {
+                                        mob.find("img").attr("src", self.options[type].img.stop);
+                                    }
+                                });
+                                return;
+                            }
+                        }
+
+                        if (mob.getMana() < self.options[type].mana / 3) {
+                            var dest = mob.getClosest(items.mana);
+                            if (dest) {
+                                var duration = getTimeNeeded(playerPos, dest, mob);
+                                mob.animate(dest, {
+                                    duration: duration,
+                                    queue: false,
+                                    easing: "linear",
+                                    start: function () {
+                                        mob.find("img").attr("src", self.options[type].img.walk);
+                                    },
+                                    always: function () {
+                                        mob.find("img").attr("src", self.options[type].img.stop);
+                                    }
+                                });
+                            }
+                            return;
+                        }
+                        
+                        
+                        // se non ha target prova a cercare il piu' vicino
+                        if (!mob.target) {
+                            if (player.is("[mobs]")) {
+                                if (randomInt(0, 1) === 0 && Object.keys(team).length > 0) {
+                                    var closest = mob.getClosest(team);
+                                    mob.setTarget(closest);
+                                } else {
+                                    //todo: rimuove il target da se stesso ogni volta che spawna un mob
+                                    mob.setTarget(me);
+                                }
+                            }
+                            if (player.is("[team]")) {
+                                if (Object.keys(mobs).length > 0) {
+                                    var closest = mob.getClosest(mobs);
+                                    mob.setTarget(closest);
                                 }
                             }
                         }
-                    }
-                    var myPos = mob.target.position();
-                    var playerPos = mob.position();
-                    var distance = getDistance(playerPos, myPos);
-                    var dest = myPos;
-                    if (distance >= mob.minRange && distance <= mob.maxRange) {
+                        var myPos = mob.target.position();
+                        var distance = getDistance(playerPos, myPos);
+                        var dest = myPos;
+                        if (distance >= mob.minRange && distance <= mob.maxRange) {
+                            mob.shot();
+                            return;
+                        }
+                        if (distance <= mob.minRange) {
+                            if (dest.left > mob.left) {
+                                dest.left = 0;
+                            }
+                            if (dest.left < mob.left) {
+                                dest.left = $(window).whith();
+                            }
+                            if (dest.top > mob.top) {
+                                dest.top = 0;
+                            }
+                            if (dest.top < mob.top) {
+                                dest.top = $(window).height();
+                            }
+                        }
+                        var duration = getTimeNeeded(playerPos, dest, mob);
+                        mob.animate(dest, {
+                            duration: duration,
+                            queue: false,
+                            easing: "linear",
+                            start: function () {
+                                mob.find("img").attr("src", self.options[type].img.walk);
+                            },
+                            always: function () {
+                                mob.find("img").attr("src", self.options[type].img.stop);
+                            }
+                        });
                         mob.shot();
-                        return;
+
+                    } catch (e) {
+                        console.log(e);
                     }
-                    if (distance <= mob.minRange) {
-                        if (dest.left > mob.left) {
-                            dest.left = 0;
-                        }
-                        if (dest.left < mob.left) {
-                            dest.left = $(window).whith();
-                        }
-                        if (dest.top > mob.top) {
-                            dest.top = 0;
-                        }
-                        if (dest.top < mob.top) {
-                            dest.top = $(window).height();
-                        }
-                    }
-                    var duration = getTimeNeeded(playerPos, dest, mob);
-                    mob.animate(dest, {
-                        duration: duration,
-                        queue: false,
-                        easing: "linear",
-                        start: function () {
-                            mob.find("img").attr("src", self.options[type].img.walk);
-                        },
-                        always: function () {
-                            mob.find("img").attr("src", self.options[type].img.stop);
-                        }
-                    });
-                    mob.shot();
+
+
                 }, mob.timeout);
             }
             return player;
@@ -514,7 +620,8 @@ var Game = function () {
                 if (keys.length === 0)
                     return;
 
-                me.setTarget(nearestMob(me));
+                var closest = me.getClosest(mobs);
+                me.setTarget(closest);
                 tabIndex++;
                 break;
 
@@ -585,24 +692,6 @@ var Game = function () {
         }, options);
 
     });
-
-    var mobsDistance = function (from) {
-        for (var i in mobs) {
-            mobs[i].distanceFrom = getDistance(from.position(), mobs[i].position());
-        }
-    };
-
-    var nearestMob = function (from) {
-        //mobsDistance(from);
-        var d = null;
-        for (var i in mobs) {
-            mobs[i].distanceFrom = getDistance(from.position(), mobs[i].position());
-            if (d === null || d.distanceFrom > mobs[i].distanceFrom) {
-                d = mobs[i];
-            }
-        }
-        return d;
-    };
 
     var _heal = function (healer) {
         if (!healer.target)
@@ -720,16 +809,14 @@ var Game = function () {
                 var hitted = myShot.hits();
                 if (!hitted)
                     return;
-                
+
                 myShot.target = hitted;
-                
-                if (!myShot.target.is("[me]"))
+
+                if (!hitted.is("[me]"))
                     hitted.setTarget(myShot.shooter);
-                
+
                 if (myShot.target.dead || !myShot.valid) {
-                    if (myShot.target.dead) {
-                        myShot.shooter.target = null;
-                    }
+                    myShot.shooter.target = null;
                     return;
                 }
                 myShot.stop();
@@ -769,28 +856,30 @@ var Game = function () {
                                 alert("You loose");
                                 window.location.reload(-1);
                             }
-                            myShot.target.remove();
                             myShot.shooter.stop();
-                            if (myShot.target.is("[mobs]")) {
-                                delete mobs[id];
-                                if (myShot.shooter.is("[team]")) {
-                                    for (var i in mobs) {
-                                        myShot.shooter.setTarget(mobs[i]);
-                                        break;
+
+                            //remove the same target from other teammates
+                            if (myShot.target.is("[team]")) {
+                                for (var i in mobs) {
+                                    if (mobs[i].target === myShot.target) {
+                                        mobs[i].setTarget(null);
                                     }
                                 }
                             }
-                            if (myShot.target.is("[team]")) {
-                                delete team[id];
+                            if (myShot.target.is("[mobs]")) {
                                 for (var i in team) {
-                                    myShot.shooter.setTarget(team[i]);
-                                    break;
+                                    if (team[i].target === myShot.target) {
+                                        team[i].setTarget(null);
+                                    }
                                 }
                             }
+                            myShot.target.remove();
+
                         });
                         if (myShot.target.is("[mobs]")) {
                             if (mobs[id] && !mobs[id].dead) {
                                 mobs[id].kill();
+                                delete mobs[id];
                                 me.score += 1;
                                 $("#score").text(me.score);
                             }
@@ -798,6 +887,7 @@ var Game = function () {
                         if (myShot.target.is("[team]")) {
                             if (team[id] && !team[id].dead) {
                                 team[id].kill();
+                                delete team[id];
                             }
                         }
                     }
@@ -825,11 +915,18 @@ var Game = function () {
         this.spawn = spawn;
         var self = this;
         setInterval(function () {
-            if (Object.keys(mobs).length >= self.options.maxSpawn)
+            if (Object.keys(mobs).length >= self.options.mobs.maxSpawn)
                 return;
             spawn(self.options.mobs).start();
         }, this.options.respawn);
         spawn(this.options.mobs).start();
+
+        setInterval(function () {
+            if (Object.keys(team).length >= self.options.team.maxSpawn)
+                return;
+            spawnTeam(self.options.team).start();
+        }, this.options.respawn);
+        spawnTeam(self.options.team).start();
 
         this.manaSpawn = manaSpawn;
         setInterval(function () {
@@ -843,8 +940,6 @@ var Game = function () {
         }, this.options.health.respawn);
         healthSpawn(this.options.health);
 
-        spawnTeam(this.options.team).start();
-        spawnTeam(this.options.team).start();
 
     };
 };

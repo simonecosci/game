@@ -390,7 +390,7 @@ var Game = function () {
                 player.setMana(mana);
 
             }, 2000);
-            
+
             if (!player.is("[me]")) {
                 var mob = player;
                 mob.tick = setInterval(function () {
@@ -398,7 +398,7 @@ var Game = function () {
                     try {
 
                         mob.stop();
-                        
+
                         // divide mana and health
                         // mobs and team can use it
                         var items = {
@@ -427,7 +427,7 @@ var Game = function () {
                                 delete objs[i];
                             }
                         }
-                        
+
                         // se la salute va sotto il 30% prova a curarsi
                         // ma se la mana non basta cerca la piu vicina pozza di salute
                         // e se nemmeno questa c'e' prova a cercarne una di mana se questa e' sotto il 30%
@@ -477,10 +477,10 @@ var Game = function () {
                             }
                             return;
                         }
-                        
-                        
+
                         // se non ha target prova a cercare il piu' vicino
                         if (!mob.target) {
+
                             if (mob.is("[mobs]")) {
                                 if (randomInt(0, 1) === 0 && Object.keys(team).length > 0) {
                                     var closest = mob.getClosest(team);
